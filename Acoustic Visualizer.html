@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>STEAM 8: Sound Waves & Acoustic Barrier Visualizer</title>
+  <style>
+    :root {
+      --primary: #1a73e8;
+      --bg: #f8f9fa;
+      --card: #ffffff;
+      --text: #202124;
+      --border: #dadce0;
+    }
+    body {
+      font-family: Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    }
+    h1 {
+      color: var(--primary);
+      margin-top: 0;
+      text-align: center;
+    }
+    .tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 10px;
+    }
+    .tab-btn {
+      padding: 10px 20px;
+      font-size: 16px;
+      font-weight: bold;
+      border: none;
+      background: #e8f0fe;
+      color: var(--primary);
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .tab-btn.active {
+      background: var(--primary);
+      color: white;
+    }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      align-items: center;
+      background: #f1f3f4;
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 15px;
+    }
+    label {
+      font-weight: bold;
+    }
+    select, button, input {
+      padding: 8px 12px;
+      font-size: 14px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+    }
+    button.action-btn {
+      background: #28a745;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    button.action-btn:hover {
+      background: #218838;
+    }
+    canvas {
+      width: 100%;
+      height: 320px;
+      background: #111;
+      border-radius: 6px;
+      display: block;
+    }
+    .metrics {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      margin-top: 15px;
+      background: #e8f0fe;
+      padding: 15px;
+      border-radius: 6px;
+      font-size: 16px;
+    }
+    .metric-card {
+      text-align: center;
+    }
+    .metric-value {
+      font-size: 22px;
+      font-weight: bold;
+      color: var(--primary);
+    }
+    .check-btn {
+      background: var(--primary);
+      color: white;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .check-btn:hover {
+      background: #1557b0;
+    }
+    .vocab-box {
+      margin-top: 15px;
+      padding: 10px 15px;
+      background: #fff3cd;
+      border-left: 5px solid #ffc107;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>🔊 Acoustic Waves & Barrier Visualizer</h1>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('tab1')">Part 1: Medium Transmission</button>
+    <button class="tab-btn" onclick="switchTab('tab2')">Part 2: Barrier Attenuation</button>
+  </div>
+
+  <!-- TAB 1: MEDIUM TRANSMISSION -->
+  <div id="tab1" class="tab-content">
+    <div class="controls">
+      <label for="mediumSelect">Select Medium:</label>
+      <select id="mediumSelect" onchange="initMedium()">
+        <option value="gas">Gas (Air) - Sparse Particles</option>
+        <option value="liquid">Liquid (Water) - Medium Density</option>
+        <option value="solid" selected>Solid (Wood) - Dense Lattice</option>
+      </select>
+
+      <button class="action-btn" onclick="triggerPulse()">🔊 Trigger Sound Pulse</button>
+    </div>
+
+    <canvas id="canvasMedium"></canvas>
+
+    <div class="metrics">
+      <div class="metric-card">
+        <div>Particle Density</div>
+        <div class="metric-value" id="densityLabel">High (Solid)</div>
+      </div>
+      <div class="metric-card">
+        <div>Relative Wave Speed</div>
+        <div class="metric-value" id="speedLabel">Fastest (~5,000 m/s)</div>
+      </div>
+      <div class="metric-card">
+        <div>Pulse Arrival Time</div>
+        <div class="metric-value" id="timeLabel">-- ms</div>
+      </div>
+    </div>
+
+    <div class="vocab-box">
+      <strong>💡 ESL Help:</strong> In <strong>Solids</strong>, particles are packed tightly together in a lattice. Kinetic sound energy moves fast from particle to particle!
+    </div>
+  </div>
+
+  <!-- TAB 2: BARRIER ATTENUATION -->
+  <div id="tab2" class="tab-content" style="display:none;">
+    <div class="controls">
+      <label for="barrierSelect">Select Barrier Material:</label>
+      <select id="barrierSelect" onchange="updateBarrier()">
+        <option value="none">No Barrier (Open Air)</option>
+        <option value="wood">Solid Wood Wall (Transmits Sound)</option>
+        <option value="sponge" selected>Soft Porous Sponge (Absorbs Sound)</option>
+      </select>
+    </div>
+
+    <canvas id="canvasBarrier"></canvas>
+
+    <div class="metrics">
+      <div class="metric-card">
+        <div>Open Volume ($A_1$)</div>
+        <div class="metric-value" id="a1Label">100 %</div>
+      </div>
+      <div class="metric-card">
+        <div>Transmitted Volume ($A_2$)</div>
+        <div class="metric-value" id="a2Label">15 %</div>
+      </div>
+      <div class="metric-card">
+        <div>Your Attenuation Efficiency (%)</div>
+        <div style="margin-top: 6px; display: flex; align-items: center; gap: 8px; justify-content: center;">
+          <input type="number" id="studentInput" placeholder="e.g. 85" step="0.1" style="width: 75px; text-align: center;">
+          <button class="check-btn" onclick="checkAnswer()">Check Math</button>
+        </div>
+        <div id="feedbackLabel" style="font-size: 13px; font-weight: bold; margin-top: 6px; height: 18px;"></div>
+      </div>
+    </div>
+
+    <div class="vocab-box">
+      <strong>💡 Calculation Formula:Attenuation Efficiency (%) = [(Open Volume - Transmitted Volume) / Open Volume] × 100 
+    </div>
+  </div>
+</div>
+
+<script>
+  let activeTab = 'tab1';
+  let canvasM = document.getElementById('canvasMedium');
+  let ctxM = canvasM.getContext('2d');
+  let canvasB = document.getElementById('canvasBarrier');
+  let ctxB = canvasB.getContext('2d');
+  let targetEfficiency = 0;
+
+  function resizeCanvas() {
+    canvasM.width = canvasM.clientWidth;
+    canvasM.height = canvasM.clientHeight;
+    canvasB.width = canvasB.clientWidth;
+    canvasB.height = canvasB.clientHeight;
+  }
+  window.addEventListener('resize', resizeCanvas);
+
+  function switchTab(tabId) {
+    activeTab = tabId;
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+    document.getElementById(tabId).style.display = 'block';
+    event.target.classList.add('active');
+    resizeCanvas();
+    if (tabId === 'tab1') initMedium();
+    if (tabId === 'tab2') updateBarrier();
+  }
+
+  /* --- PART 1: MEDIUM TRANSMISSION SIMULATION --- */
+  let particles = [];
+  let pulseWave = null;
+  let pulseStartTime = 0;
+
+  function initMedium() {
+    resizeCanvas();
+    let type = document.getElementById('mediumSelect').value;
+    particles = [];
+    pulseWave = null;
+    document.getElementById('timeLabel').innerText = '-- ms';
+
+    let densityLabel = document.getElementById('densityLabel');
+    let speedLabel = document.getElementById('speedLabel');
+
+    let cols = 20, rows = 10;
+    if (type === 'gas') {
+      cols = 8; rows = 5;
+      densityLabel.innerText = "Low (Gas)";
+      speedLabel.innerText = "Slow (~340 m/s)";
+    } else if (type === 'liquid') {
+      cols = 14; rows = 8;
+      densityLabel.innerText = "Medium (Liquid)";
+      speedLabel.innerText = "Medium (~1,500 m/s)";
+    } else {
+      cols = 22; rows = 12;
+      densityLabel.innerText = "High (Solid)";
+      speedLabel.innerText = "Fastest (~5,000 m/s)";
+    }
+
+    let marginX = 80, marginY = 40;
+    let spacingX = (canvasM.width - marginX * 2) / cols;
+    let spacingY = (canvasM.height - marginY * 2) / rows;
+
+    for (let i = 0; i < cols; i++) {
+      for (let j = 0; j < rows; j++) {
+        let jitter = (type === 'gas') ? 15 : (type === 'liquid') ? 6 : 1;
+        particles.push({
+          baseX: marginX + i * spacingX + (Math.random() - 0.5) * jitter,
+          baseY: marginY + j * spacingY + (Math.random() - 0.5) * jitter,
+          x: 0, y: 0,
+          vx: 0, vy: 0,
+          col: i
+        });
+        particles[particles.length-1].x = particles[particles.length-1].baseX;
+        particles[particles.length-1].y = particles[particles.length-1].baseY;
+      }
+    }
+  }
+
+  function triggerPulse() {
+    let type = document.getElementById('mediumSelect').value;
+    let speed = (type === 'gas') ? 4 : (type === 'liquid') ? 9 : 18;
+    pulseWave = { x: 50, speed: speed, active: true };
+    pulseStartTime = performance.now();
+  }
+
+  function animateMedium() {
+    if (activeTab === 'tab1') {
+      ctxM.clearRect(0, 0, canvasM.width, canvasM.height);
+
+      // Draw Speaker Source
+      ctxM.fillStyle = '#1a73e8';
+      ctxM.fillRect(10, canvasM.height / 2 - 40, 30, 80);
+      ctxM.fillStyle = '#fff';
+      ctxM.fillText("Speaker", 12, canvasM.height / 2 + 5);
+
+      // Pulse physics
+      if (pulseWave && pulseWave.active) {
+        pulseWave.x += pulseWave.speed;
+
+        let detectorX = canvasM.width - 70;
+        if (pulseWave.x >= detectorX && document.getElementById('timeLabel').innerText === '-- ms') {
+          let elapsed = Math.round(performance.now() - pulseStartTime);
+          document.getElementById('timeLabel').innerText = elapsed + ' ms';
+        }
+
+        if (pulseWave.x > canvasM.width) pulseWave.active = false;
+      }
+
+      // Draw Sensor on right
+      ctxM.strokeStyle = '#28a745';
+      ctxM.lineWidth = 3;
+      ctxM.strokeRect(canvasM.width - 70, canvasM.height/2 - 50, 40, 100);
+      ctxM.fillStyle = '#28a745';
+      ctxM.fillText("Detector", canvasM.width - 72, canvasM.height/2 - 60);
+
+      // Render & displace particles
+      let type = document.getElementById('mediumSelect').value;
+      particles.forEach(p => {
+        if (pulseWave && pulseWave.active) {
+          let dist = Math.abs(p.baseX - pulseWave.x);
+          if (dist < 30) {
+            let displacement = (1 - dist / 30) * (type === 'solid' ? 12 : 25);
+            p.x = p.baseX + displacement;
+          } else {
+            p.x += (p.baseX - p.x) * 0.1;
+          }
+        } else {
+          p.x += (p.baseX - p.x) * 0.1;
+        }
+
+        ctxM.beginPath();
+        ctxM.arc(p.x, p.y, type === 'solid' ? 5 : 4, 0, Math.PI * 2);
+        ctxM.fillStyle = (p.x > p.baseX + 2) ? '#ff5722' : '#4285f4';
+        ctxM.fill();
+      });
+    }
+    requestAnimationFrame(animateMedium);
+  }
+
+  /* --- PART 2: BARRIER ATTENUATION SIMULATION --- */
+  let waveOffset = 0;
+
+  function updateBarrier() {
+    let barrier = document.getElementById('barrierSelect').value;
+    let a1 = 100;
+    let a2 = 100;
+
+    if (barrier === 'wood') a2 = 70;
+    if (barrier === 'sponge') a2 = 15;
+
+    targetEfficiency = ((a1 - a2) / a1) * 100;
+
+    document.getElementById('a1Label').innerText = a1 + " %";
+    document.getElementById('a2Label').innerText = a2 + " %";
+    
+    // Clear student input and feedback when switching materials
+    document.getElementById('studentInput').value = '';
+    let feedback = document.getElementById('feedbackLabel');
+    feedback.innerText = '';
+  }
+
+  function checkAnswer() {
+    let inputVal = parseFloat(document.getElementById('studentInput').value);
+    let feedback = document.getElementById('feedbackLabel');
+
+    if (isNaN(inputVal)) {
+      feedback.style.color = '#d9534f';
+      feedback.innerText = '⚠️ Enter a number first!';
+      return;
+    }
+
+    // Allow margin of error within 1.0%
+    if (Math.abs(inputVal - targetEfficiency) <= 1.0) {
+      feedback.style.color = '#28a745';
+      feedback.innerText = `✅ Correct! Efficiency is ${targetEfficiency.toFixed(1)}%`;
+    } else {
+      feedback.style.color = '#d9534f';
+      feedback.innerText = '❌ Try again! Use the formula below.';
+    }
+  }
+
+  function animateBarrier() {
+    if (activeTab === 'tab2') {
+      ctxB.clearRect(0, 0, canvasB.width, canvasB.height);
+      waveOffset += 0.08;
+
+      let barrierType = document.getElementById('barrierSelect').value;
+      let barrierX = canvasB.width / 2;
+      let a1 = 50;
+      let a2 = (barrierType === 'none') ? 50 : (barrierType === 'wood') ? 35 : 8;
+
+      // Draw sound source
+      ctxB.fillStyle = '#1a73e8';
+      ctxB.fillRect(20, canvasB.height/2 - 30, 20, 60);
+
+      // Draw Wave Path
+      ctxB.beginPath();
+      ctxB.lineWidth = 3;
+      ctxB.strokeStyle = '#4285f4';
+
+      for (let x = 40; x < canvasB.width - 40; x += 2) {
+        let amp = (x < barrierX) ? a1 : a2;
+        let y = canvasB.height / 2 + Math.sin(x * 0.05 - waveOffset) * amp;
+        if (x === 40) ctxB.moveTo(x, y);
+        else ctxB.lineTo(x, y);
+      }
+      ctxB.stroke();
+
+      // Draw Barrier Wall
+      if (barrierType !== 'none') {
+        ctxB.fillStyle = (barrierType === 'wood') ? '#8d6e63' : '#ffb74d';
+        ctxB.fillRect(barrierX - 15, 30, 30, canvasB.height - 60);
+
+        ctxB.fillStyle = '#fff';
+        ctxB.font = '12px Arial';
+        let text = (barrierType === 'wood') ? 'Wood' : 'Sponge';
+        ctxB.fillText(text, barrierX - 18, 25);
+      }
+
+      // Draw Detectors
+      ctxB.fillStyle = 'rgba(40, 167, 69, 0.2)';
+      ctxB.fillRect(100, canvasB.height/2 - 60, 40, 120);
+      ctxB.strokeStyle = '#28a745';
+      ctxB.strokeRect(100, canvasB.height/2 - 60, 40, 120);
+      ctxB.fillStyle = '#28a745';
+      ctxB.fillText("Detector A1", 85, canvasB.height/2 - 70);
+
+      ctxB.fillStyle = 'rgba(217, 83, 79, 0.2)';
+      ctxB.fillRect(canvasB.width - 120, canvasB.height/2 - 60, 40, 120);
+      ctxB.strokeStyle = '#d9534f';
+      ctxB.strokeRect(canvasB.width - 120, canvasB.height/2 - 60, 40, 120);
+      ctxB.fillStyle = '#d9534f';
+      ctxB.fillText("Detector A2", canvasB.width - 135, canvasB.height/2 - 70);
+    }
+    requestAnimationFrame(animateBarrier);
+  }
+
+  window.onload = function() {
+    resizeCanvas();
+    initMedium();
+    updateBarrier();
+    animateMedium();
+    animateBarrier();
+  };
+</script>
+
+</body>
+</html>
